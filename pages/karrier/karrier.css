@@ -1,0 +1,28 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: white;
+}
+
+.career-page {
+    padding: 20px;
+}
+.career-page-sub {
+    margin-bottom: 30px;
+    padding: 10px;
+    background: #444444;
+    opacity: 80%;
+}
+.title {
+    margin-bottom: 20px;
+}
+.text-content {
+    margin-top: 10px;
+}
