@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+    
+    environment {
+        DEPLOY_SERVER_ADDR = '46.101.176.240'
+        DEPLOY_SERVER_USER = 'jenkins'
+        CONTAINER_NAME = 'apache-server-webprog'
+        IMAGE_NAME = 'my-apache2-webprog'
+    }
+
+    stages {
+        stage('Deploy') {
+            steps {
+                echo "Copy files to remote server"
+                sh """scp -r docker $env.DEPLOY_SERVER_USER@$env.DEPLOY_SERVER_ADDR:/home/jenkins/"""
+                sh """scp -r webapp $env.DEPLOY_SERVER_USER@$env.DEPLOY_SERVER_ADDR:/home/jenkins/docker/"""
+
+                echo "Stop and remove previously running container/image"
+                sh """ssh -tt $env.DEPLOY_SERVER_USER@$env.DEPLOY_SERVER_ADDR<<EOT
+                    cd /home/jenkins/docker
+                    sh docker_stop_remove.sh $env.CONTAINER_NAME $env.IMAGE_NAME
+                    exit
+                    EOT"""
+
+                echo "Build and run new container"
+                sh """ssh -tt $env.DEPLOY_SERVER_USER@$env.DEPLOY_SERVER_ADDR<<EOT
+                    cd /home/jenkins/docker
+                    sh docker_build.sh $env.CONTAINER_NAME $env.IMAGE_NAME
+                    exit
+                    EOT"""
+
+                echo "Clean up files"
+                sh """ssh -tt $env.DEPLOY_SERVER_USER@$env.DEPLOY_SERVER_ADDR<<EOT
+                    cd /home/jenkins/
+                    rm -r docker
+                    exit
+                    EOT"""
+
+                echo "Deploy completed"
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh """if [ \$(curl -o /dev/null -s -w "%{http_code}\n" $env.DEPLOY_SERVER_ADDR) != 200 ]; then exit 1; else echo "Site up and running"; fi """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "success"
+        }
+    
+        failure {
+            echo "failed"
+        }
+    }
+}
